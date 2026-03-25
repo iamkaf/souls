@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "souls",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-03-24",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "routes": [
+    {
+      "pattern": "souls.kaf.sh",
+      "custom_domain": true
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  }
+}
