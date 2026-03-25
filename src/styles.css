@@ -336,12 +336,70 @@ button {
   overflow: auto;
 }
 
-.route-inline-reveal {
-  white-space: nowrap;
+.route-token-thing {
+  color: rgba(223, 190, 92, 0.98);
 }
 
-.route-inline-revealed {
+.route-token-place {
+  color: rgba(117, 163, 232, 0.98);
+}
+
+.route-token-entity {
+  color: rgba(216, 89, 89, 0.98);
+}
+
+.route-inline-spoiler {
+  display: inline;
+  cursor: pointer;
+  transition:
+    opacity 160ms ease,
+    background-color 160ms ease;
+}
+
+.route-inline-spoiler-hidden {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+}
+
+.route-inline-spoiler-hidden,
+.route-inline-spoiler-hidden * {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.route-inline-spoiler-hidden:hover,
+.route-inline-spoiler-hidden:focus-visible {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  outline: none;
+}
+
+.route-inline-spoiler-revealed {
   color: rgba(244, 244, 245, 0.96);
+}
+
+.route-fight-block {
+  cursor: pointer;
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease,
+    background-color 180ms ease;
+}
+
+.route-fight-block-hidden {
+  filter: blur(0.34rem);
+  opacity: 0.92;
+  user-select: none;
+}
+
+.route-fight-block-hidden:hover,
+.route-fight-block-hidden:focus-visible {
+  filter: blur(0.26rem);
+  outline: none;
+}
+
+.route-fight-block-revealed {
+  filter: none;
+  opacity: 1;
 }
 
 .dlc-theme-default {

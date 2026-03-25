@@ -7,6 +7,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  type JSX,
 } from "solid-js";
 import {
   CircleDashed,
@@ -189,6 +190,35 @@ function getFinalBossId(gameId: GameId) {
   return finalBoss?.id ?? null;
 }
 
+function renderRouteText(text: string): Array<string | JSX.Element> {
+  const parts: Array<string | JSX.Element> = [];
+  const tagPattern = /\[(thing|place|entity)\]([\s\S]*?)\[\/\1\]/g;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagPattern.exec(text)) !== null) {
+    const [fullMatch, kind, content] = match;
+    const start = match.index;
+
+    if (start > cursor) {
+      parts.push(text.slice(cursor, start));
+    }
+
+    parts.push(
+      <span class={`route-token route-token-${kind}`}>
+        {content}
+      </span>,
+    );
+    cursor = start + fullMatch.length;
+  }
+
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
+}
+
 function App() {
   const [query, setQuery] = createSignal("");
   const [filter, setFilter] = createSignal<FilterMode>("all");
@@ -202,6 +232,7 @@ function App() {
   const [revealedRouteInlineIds, setRevealedRouteInlineIds] = createSignal<Set<string>>(
     new Set<string>(),
   );
+  const [fightTipsVisible, setFightTipsVisible] = createSignal(false);
   const [ready, setReady] = createSignal(false);
   const [mobileNavOpen, setMobileNavOpen] = createSignal(false);
   let hoverAnimationFrame = 0;
@@ -424,6 +455,7 @@ function App() {
     stopHoverReveal();
     setRouteBossId(null);
     setRevealedRouteInlineIds(new Set<string>());
+    setFightTipsVisible(false);
   });
 
   createEffect(() => {
@@ -431,6 +463,7 @@ function App() {
       if (event.key === "Escape") {
         setRouteBossId(null);
         setRevealedRouteInlineIds(new Set<string>());
+        setFightTipsVisible(false);
       }
     };
 
@@ -461,11 +494,13 @@ function App() {
   });
   const openRoute = (bossId: string) => {
     setRevealedRouteInlineIds(new Set<string>());
+    setFightTipsVisible(false);
     setRouteBossId(bossId);
   };
   const closeRoute = () => {
     setRouteBossId(null);
     setRevealedRouteInlineIds(new Set<string>());
+    setFightTipsVisible(false);
   };
   const revealRouteInline = (revealId: string) => {
     setRevealedRouteInlineIds((current) => {
@@ -473,6 +508,14 @@ function App() {
       next.add(revealId);
       return next;
     });
+  };
+  const revealRouteInlineFromKey = (event: KeyboardEvent, revealId: string) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    revealRouteInline(revealId);
   };
 
   return (
@@ -988,32 +1031,33 @@ function App() {
                       <For each={entry().paragraphs}>
                         {(paragraph) => (
                           <p>
-                            {paragraph.textBefore ?? ""}
+                            {renderRouteText(paragraph.textBefore ?? "")}
                             <Show when={paragraph.reveal}>
                               {(reveal) => (
                                 <Show
                                   when={revealedRouteInlineIds().has(reveal().id)}
                                   fallback={
-                                    <>
-                                      {" "}
-                                      <button
-                                        type="button"
-                                        onClick={() => revealRouteInline(reveal().id)}
-                                        class="route-inline-reveal inline-flex items-center gap-2 border border-white/10 px-2.5 py-1 text-[0.58rem] uppercase tracking-[0.2em] text-zinc-400 align-middle transition hover:border-white/22 hover:text-zinc-200"
-                                      >
-                                        {reveal().buttonLabel}
-                                      </button>
-                                      {" "}
-                                    </>
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label="Reveal hidden route text"
+                                      onClick={() => revealRouteInline(reveal().id)}
+                                      onKeyDown={(event) =>
+                                        revealRouteInlineFromKey(event, reveal().id)
+                                      }
+                                      class="route-inline-spoiler route-inline-spoiler-hidden"
+                                    >
+                                      {renderRouteText(reveal().hiddenText)}
+                                    </span>
                                   }
                                 >
-                                  <span class="route-inline-revealed text-zinc-100">
-                                    {reveal().hiddenText}
+                                  <span class="route-inline-spoiler route-inline-spoiler-revealed">
+                                    {renderRouteText(reveal().hiddenText)}
                                   </span>
                                 </Show>
                               )}
                             </Show>
-                            {paragraph.textAfter ?? ""}
+                            {renderRouteText(paragraph.textAfter ?? "")}
                           </p>
                         )}
                       </For>
@@ -1021,6 +1065,31 @@ function App() {
                   </Show>
                 </div>
               </section>
+
+              <Show when={routeEntry()?.tips?.length}>
+                <section class="border-t border-white/10 px-5 py-5 sm:px-6">
+                  <p class="text-[0.66rem] uppercase tracking-[0.34em] text-zinc-500">Fight</p>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={fightTipsVisible() ? "Fighting tips revealed" : "Reveal fighting tips"}
+                    onClick={() => setFightTipsVisible(true)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setFightTipsVisible(true);
+                      }
+                    }}
+                    class={`route-fight-block mt-4 space-y-4 text-[1rem] leading-8 sm:text-[1.05rem] ${
+                      fightTipsVisible() ? "route-fight-block-revealed" : "route-fight-block-hidden"
+                    }`}
+                  >
+                    <For each={routeEntry()?.tips ?? []}>
+                      {(tip) => <p>{renderRouteText(tip)}</p>}
+                    </For>
+                  </div>
+                </section>
+              </Show>
             </div>
           </div>
         )}
